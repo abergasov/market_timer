@@ -1,64 +1,65 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"go_project_template/internal/config"
-	"go_project_template/internal/logger"
-	samplerRepo "go_project_template/internal/repository/sampler"
-	"go_project_template/internal/routes"
-	samplerService "go_project_template/internal/service/sampler"
-	"go_project_template/internal/storage/database"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/abergasov/market_timer/internal/config"
+	"github.com/abergasov/market_timer/internal/entities"
+	"github.com/abergasov/market_timer/internal/logger"
+	"github.com/abergasov/market_timer/internal/repository/price"
+	"github.com/abergasov/market_timer/internal/routes"
+	"github.com/abergasov/market_timer/internal/service/pricer"
+	"github.com/abergasov/market_timer/internal/service/stopper"
+	"github.com/abergasov/market_timer/internal/storage/database"
 	"go.uber.org/zap"
 )
 
 var (
-	confFile = flag.String("config", "configs/app_conf.yml", "Configs file path")
+	dbPath   = "storage.db"
+	confFile = "configs/app_conf.yml"
 	appHash  = os.Getenv("GIT_HASH")
 )
 
 func main() {
-	flag.Parse()
 	appLog, err := logger.NewAppLogger(appHash)
 	if err != nil {
 		log.Fatalf("unable to create logger: %s", err)
 	}
-	appLog.Info("app starting", zap.String("conf", *confFile))
-	appConf, err := config.InitConf(*confFile)
+	appLog.Info("app starting", zap.String("conf", confFile))
+	appConf, err := config.InitConf(confFile)
 	if err != nil {
-		appLog.Fatal("unable to init config", err, zap.String("config", *confFile))
+		appLog.Fatal("unable to init config", err, zap.String("config", confFile))
 	}
-
+	defer stopper.Stop()
 	appLog.Info("create storage connections")
-	dbConn, err := getDBConnect(appLog, &appConf.ConfigDB, appConf.MigratesFolder)
+	dbConn, err := getDBConnect(appLog, dbPath)
 	if err != nil {
-		appLog.Fatal("unable to connect to db", err, zap.String("host", appConf.ConfigDB.Address))
+		appLog.Fatal("unable to connect to db", err, zap.String("host", dbPath))
 	}
-	defer func() {
-		if err = dbConn.Close(); err != nil {
-			appLog.Fatal("unable to close db connection", err)
-		}
-	}()
+	stopper.AddStopper(dbConn)
 
 	appLog.Info("init repositories")
-	repo := samplerRepo.InitRepo(dbConn)
+	repo, err := price.InitRepo(dbConn, entities.ETH)
+	if err != nil {
+		appLog.Fatal("unable to init repositories", err)
+	}
 
 	appLog.Info("init services")
-	service := samplerService.InitService(appLog, repo)
+	service, err := pricer.InitService(appLog, repo, appConf.ETHRPC)
+	if err != nil {
+		appLog.Fatal("unable to init services", err)
+	}
+	stopper.AddStopper(service)
+	go service.Start()
 
 	appLog.Info("init http service")
 	appHTTPServer := routes.InitAppRouter(appLog, service, fmt.Sprintf(":%d", appConf.AppPort))
-	defer func() {
-		if err = appHTTPServer.Stop(); err != nil {
-			appLog.Fatal("unable to stop http service", err)
-		}
-	}()
+	stopper.AddStopper(appHTTPServer)
 	go func() {
 		if err = appHTTPServer.Run(); err != nil {
 			appLog.Fatal("unable to start http service", err)
@@ -67,13 +68,13 @@ func main() {
 
 	// register app shutdown
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(c, syscall.SIGHUP, syscall.SIGINT, syscall.SIGQUIT, os.Interrupt, syscall.SIGTERM)
 	<-c // This blocks the main thread until an interrupt is received
 }
 
-func getDBConnect(log logger.AppLogger, cnf *config.DBConf, migratesFolder string) (*database.DBConnect, error) {
+func getDBConnect(log logger.AppLogger, dbPath string) (*database.DBConnect, error) {
 	for i := 0; i < 5; i++ {
-		dbConnect, err := database.InitDBConnect(cnf, migratesFolder)
+		dbConnect, err := database.InitDBConnect(log.With(zap.String("service", "db")), dbPath)
 		if err == nil {
 			return dbConnect, nil
 		}

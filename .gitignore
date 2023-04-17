@@ -4,3 +4,5 @@ configs/app_conf.yml
 configs/common.env
 configs/app_conf_docker.yml
 bin
+storage.db
+internal/repository/price/storage.db

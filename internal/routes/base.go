@@ -1,9 +1,8 @@
 package routes
 
 import (
-	"go_project_template/internal/logger"
-	"go_project_template/internal/service/sampler"
-
+	"github.com/abergasov/market_timer/internal/logger"
+	"github.com/abergasov/market_timer/internal/service/pricer"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"go.uber.org/zap"
@@ -12,12 +11,12 @@ import (
 type Server struct {
 	appAddr    string
 	log        logger.AppLogger
-	service    *sampler.Service
+	service    *pricer.Service
 	httpEngine *fiber.App
 }
 
 // InitAppRouter initializes the HTTP Server.
-func InitAppRouter(log logger.AppLogger, service *sampler.Service, address string) *Server {
+func InitAppRouter(log logger.AppLogger, service *pricer.Service, address string) *Server {
 	app := &Server{
 		appAddr:    address,
 		httpEngine: fiber.New(fiber.Config{}),
@@ -41,6 +40,9 @@ func (s *Server) Run() error {
 	return s.httpEngine.Listen(s.appAddr)
 }
 
-func (s *Server) Stop() error {
-	return s.httpEngine.Shutdown()
+func (s *Server) Stop() {
+	s.log.Info("stopping service")
+	if err := s.httpEngine.Shutdown(); err != nil {
+		s.log.Error("unable to stop http service", err)
+	}
 }

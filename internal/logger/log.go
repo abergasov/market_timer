@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"github.com/abergasov/market_timer/internal/service/stopper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -40,9 +41,11 @@ func (a Logger) Error(message string, err error, args ...zapcore.Field) {
 
 func (a Logger) Fatal(message string, err error, args ...zapcore.Field) {
 	if len(args) == 0 {
+		stopper.Stop()
 		a.l.Fatal(message, zap.Error(err))
 		return
 	}
+	stopper.Stop()
 	a.l.Fatal(message, prepareParams(err, args)...)
 }
 
