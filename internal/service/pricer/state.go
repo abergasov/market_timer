@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/abergasov/market_timer/internal/entities"
+	"github.com/abergasov/market_timer/internal/utils"
 )
 
 func (s *Service) prepareGasData() error {
@@ -30,4 +31,18 @@ func (s *Service) addBlock(blockID uint64, fees *big.Int) {
 	if uint64(s.gasList.Len()) > MaxKeepBlocks {
 		s.gasList.Remove(s.gasList.Back())
 	}
+}
+
+// getGasPricePosition loop over all blocks and calculate position of current block
+func (s *Service) getGasPricePosition(fee *big.Int) float64 {
+	blockHasPriceMore := 0
+	s.gasListMU.RLock()
+	defer s.gasListMU.RUnlock()
+	totalBlocks := s.gasList.Len()
+	for el := s.gasList.Front(); el != nil; el = el.Next() {
+		if fee.Cmp(el.Value.(entities.GasData).BaseFee) < 0 { // if current block has MORE fees than block in list
+			blockHasPriceMore++
+		}
+	}
+	return utils.ToFixed(float64(blockHasPriceMore*100)/float64(totalBlocks), 2)
 }

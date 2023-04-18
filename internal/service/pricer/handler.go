@@ -9,14 +9,19 @@ import (
 func (s *Service) observeGas() {
 	ch := make(chan *types.Header, 100)
 	go s.handleHead(ch)
-	if _, err := s.ethClient.SubscribeNewHead(s.ctx, ch); err != nil {
+	sub, err := s.ethClient.SubscribeNewHead(s.ctx, ch)
+	if err != nil {
 		s.log.Fatal("unable to subscribe to new head", err)
 	}
+	go func() {
+		for subErr := range sub.Err() {
+			s.log.Fatal("subscription error", subErr)
+		}
+	}()
 }
 
 func (s *Service) handleHead(ch chan *types.Header) {
 	for h := range ch {
-		s.log.Info("new header", zap.String("block", h.Number.String()), zap.String("base_fee", h.BaseFee.String()))
 		s.headerMU.Lock()
 		s.header = h
 		s.headerMU.Unlock()
@@ -28,6 +33,18 @@ func (s *Service) handleHead(ch chan *types.Header) {
 			},
 		}); err != nil {
 			s.log.Error("unable to add gas data", err)
+		}
+		percent := s.getGasPricePosition(h.BaseFee)
+		s.log.Info("blocks has more price than current", zap.Float64("percent", percent), zap.String("block", h.Number.String()), zap.String("base_fee", h.BaseFee.String()))
+		s.subsMU.RLock()
+		for subPercent, sub := range s.subs {
+			if percent <= subPercent {
+				sub <- entities.GasRates{
+					BlockID:    h.Number.Uint64(),
+					BaseFee:    h.BaseFee,
+					Percentage: percent,
+				}
+			}
 		}
 	}
 }

@@ -5,6 +5,12 @@ import (
 	"math/big"
 )
 
+type GasRates struct {
+	Percentage float64
+	BlockID    uint64
+	BaseFee    *big.Int
+}
+
 type GasData struct {
 	BlockID uint64
 	BaseFee *big.Int

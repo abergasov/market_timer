@@ -50,12 +50,12 @@ func main() {
 	}
 
 	appLog.Info("init services")
-	service, err := pricer.InitService(appLog, repo, appConf.ETHRPC)
-	if err != nil {
-		appLog.Fatal("unable to init services", err)
-	}
+	service := pricer.InitService(appLog, repo, appConf.ETHRPC)
 	stopper.AddStopper(service)
-	go service.Start()
+
+	if err = service.Start(); err != nil {
+		appLog.Fatal("unable to start service", err)
+	}
 
 	appLog.Info("init http service")
 	appHTTPServer := routes.InitAppRouter(appLog, service, fmt.Sprintf(":%d", appConf.AppPort))
