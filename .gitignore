@@ -6,3 +6,4 @@ configs/app_conf_docker.yml
 bin
 storage.db
 internal/repository/price/storage.db
+internal/routes/config.yaml

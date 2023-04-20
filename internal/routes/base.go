@@ -2,21 +2,22 @@ package routes
 
 import (
 	"github.com/abergasov/market_timer/internal/logger"
-	"github.com/abergasov/market_timer/internal/service/pricer"
+	"github.com/abergasov/market_timer/internal/service/notifier"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/gofiber/websocket/v2"
 	"go.uber.org/zap"
 )
 
 type Server struct {
 	appAddr    string
 	log        logger.AppLogger
-	service    *pricer.Service
+	service    *notifier.Service
 	httpEngine *fiber.App
 }
 
 // InitAppRouter initializes the HTTP Server.
-func InitAppRouter(log logger.AppLogger, service *pricer.Service, address string) *Server {
+func InitAppRouter(log logger.AppLogger, service *notifier.Service, address string) *Server {
 	app := &Server{
 		appAddr:    address,
 		httpEngine: fiber.New(fiber.Config{}),
@@ -32,6 +33,14 @@ func (s *Server) initRoutes() {
 	s.httpEngine.Get("/", func(ctx *fiber.Ctx) error {
 		return ctx.SendString("pong")
 	})
+	s.httpEngine.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
+	})
+	s.httpEngine.Get("/ws/:chain/:percentage", websocket.New(s.handleTransactions))
 }
 
 // Run starts the HTTP Server.

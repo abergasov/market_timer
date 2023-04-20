@@ -36,15 +36,20 @@ func (s *Service) handleHead(ch chan *types.Header) {
 		}
 		percent := s.getGasPricePosition(h.BaseFee)
 		s.log.Info("blocks has more price than current", zap.Float64("percent", percent), zap.String("block", h.Number.String()), zap.String("base_fee", h.BaseFee.String()))
-		s.subsMU.RLock()
-		for subPercent, sub := range s.subs {
-			if percent <= subPercent {
-				sub <- entities.GasRates{
-					BlockID:    h.Number.Uint64(),
-					BaseFee:    h.BaseFee,
-					Percentage: percent,
-				}
-			}
+		s.notifySubs(entities.GasRates{
+			BlockID:    h.Number.Uint64(),
+			BaseFee:    h.BaseFee,
+			Percentage: percent,
+		})
+	}
+}
+
+func (s *Service) notifySubs(rate entities.GasRates) {
+	s.subsMU.RLock()
+	defer s.subsMU.RUnlock()
+	for percent, sub := range s.subs {
+		if rate.Percentage <= percent {
+			sub <- rate
 		}
 	}
 }

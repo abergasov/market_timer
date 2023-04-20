@@ -13,6 +13,7 @@ import (
 	"github.com/abergasov/market_timer/internal/logger"
 	"github.com/abergasov/market_timer/internal/repository/price"
 	"github.com/abergasov/market_timer/internal/routes"
+	"github.com/abergasov/market_timer/internal/service/notifier"
 	"github.com/abergasov/market_timer/internal/service/pricer"
 	"github.com/abergasov/market_timer/internal/service/stopper"
 	"github.com/abergasov/market_timer/internal/storage/database"
@@ -53,12 +54,16 @@ func main() {
 	service := pricer.InitService(appLog, repo, appConf.ETHRPC)
 	stopper.AddStopper(service)
 
+	serviceNotifier := notifier.NewService(appLog.With(zap.String("service", "notifier")), map[string]*pricer.Service{
+		entities.ETH: service,
+	})
+
 	if err = service.Start(); err != nil {
 		appLog.Fatal("unable to start service", err)
 	}
 
 	appLog.Info("init http service")
-	appHTTPServer := routes.InitAppRouter(appLog, service, fmt.Sprintf(":%d", appConf.AppPort))
+	appHTTPServer := routes.InitAppRouter(appLog, serviceNotifier, fmt.Sprintf(":%d", appConf.AppPort))
 	stopper.AddStopper(appHTTPServer)
 	go func() {
 		if err = appHTTPServer.Run(); err != nil {
