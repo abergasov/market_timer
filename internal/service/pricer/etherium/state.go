@@ -1,4 +1,4 @@
-package pricer
+package etherium
 
 import (
 	"fmt"

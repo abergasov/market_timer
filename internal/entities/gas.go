@@ -6,9 +6,9 @@ import (
 )
 
 type GasRates struct {
-	Percentage float64
-	BlockID    uint64
-	BaseFee    *big.Int
+	Percentage float64  `json:"percentage"`
+	BlockID    uint64   `json:"block_id"`
+	BaseFee    *big.Int `json:"base_fee"`
 }
 
 type GasData struct {

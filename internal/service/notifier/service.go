@@ -15,13 +15,13 @@ import (
 // and notify consumers about price changes
 type Service struct {
 	log            logger.AppLogger
-	priceObservers map[string]*pricer.Service
+	priceObservers map[string]pricer.Observer
 	priceSubsMU    sync.RWMutex
 	priceSubs      map[string]map[float64]map[uuid.UUID]chan entities.GasRates
 	proxy          map[string]map[float64]chan entities.GasRates
 }
 
-func NewService(log logger.AppLogger, priceObservers map[string]*pricer.Service) *Service {
+func NewService(log logger.AppLogger, priceObservers map[string]pricer.Observer) *Service {
 	subs := make(map[string]map[float64]map[uuid.UUID]chan entities.GasRates)
 	proxy := make(map[string]map[float64]chan entities.GasRates)
 	for chain := range priceObservers {

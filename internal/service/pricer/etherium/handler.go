@@ -1,4 +1,4 @@
-package pricer
+package etherium
 
 import (
 	"github.com/abergasov/market_timer/internal/entities"

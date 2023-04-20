@@ -15,6 +15,7 @@ import (
 	"github.com/abergasov/market_timer/internal/routes"
 	"github.com/abergasov/market_timer/internal/service/notifier"
 	"github.com/abergasov/market_timer/internal/service/pricer"
+	"github.com/abergasov/market_timer/internal/service/pricer/etherium"
 	"github.com/abergasov/market_timer/internal/service/stopper"
 	"github.com/abergasov/market_timer/internal/storage/database"
 	"go.uber.org/zap"
@@ -51,14 +52,14 @@ func main() {
 	}
 
 	appLog.Info("init services")
-	service := pricer.InitService(appLog, repo, appConf.ETHRPC)
-	stopper.AddStopper(service)
+	serviceETH := etherium.InitService(appLog, repo, appConf.ETHRPC)
+	stopper.AddStopper(serviceETH)
 
-	serviceNotifier := notifier.NewService(appLog.With(zap.String("service", "notifier")), map[string]*pricer.Service{
-		entities.ETH: service,
+	serviceNotifier := notifier.NewService(appLog.With(zap.String("service", "notifier")), map[string]pricer.Observer{
+		entities.ETH: serviceETH,
 	})
 
-	if err = service.Start(); err != nil {
+	if err = serviceETH.Start(); err != nil {
 		appLog.Fatal("unable to start service", err)
 	}
 
