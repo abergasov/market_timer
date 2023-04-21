@@ -9,18 +9,18 @@ import (
 	"github.com/abergasov/market_timer/internal/entities"
 )
 
-var (
-	BlockDuration          = uint64(10)                           // approximate block duration in seconds
-	MaxKeepBlocks          = 3 * ((24 * 60 * 60) / BlockDuration) // how many days in past store gas info
-	BlockDownloadBatchSize = uint64(1024)                         // how many blocks download in one iteration
-)
+type BlockSetup struct {
+	BlockDuration          float64 // approximate block duration in seconds
+	MaxKeepBlocks          uint64  // how many days in past store gas info
+	BlockDownloadBatchSize uint64  // how many blocks download in one iteration
+}
 
 func (s *Service) DownloadMissedHistory() error {
 	currentBlock, err := s.ethClient.BlockNumber(s.ctx)
 	if err != nil {
 		return fmt.Errorf("unable to get current block number: %w", err)
 	}
-	from := currentBlock - MaxKeepBlocks
+	from := currentBlock - s.blockConf.MaxKeepBlocks
 	if err = s.repo.DeleteBlocksBefore(big.NewInt(int64(from))); err != nil {
 		return fmt.Errorf("unable to delete blocks before %d: %w", from, err)
 	}
@@ -41,7 +41,7 @@ func (s *Service) DownloadMissedHistory() error {
 }
 
 func (s *Service) getMissedBlocks(blocks []entities.GasData, from, to uint64) [][]int64 {
-	result := make([][]int64, 0, len(blocks)/int(BlockDownloadBatchSize))
+	result := make([][]int64, 0, len(blocks)/int(s.blockConf.BlockDownloadBatchSize))
 	blocksMap := make(map[uint64]struct{}, len(blocks))
 	for _, block := range blocks {
 		blocksMap[block.BlockID] = struct{}{}
@@ -50,8 +50,8 @@ func (s *Service) getMissedBlocks(blocks []entities.GasData, from, to uint64) []
 		if _, ok := blocksMap[i]; ok {
 			continue
 		}
-		if len(result) == 0 || len(result[len(result)-1]) == int(BlockDownloadBatchSize) {
-			result = append(result, make([]int64, 0, BlockDownloadBatchSize))
+		if len(result) == 0 || len(result[len(result)-1]) == int(s.blockConf.BlockDownloadBatchSize) {
+			result = append(result, make([]int64, 0, s.blockConf.BlockDownloadBatchSize))
 		}
 		result[len(result)-1] = append(result[len(result)-1], int64(i))
 	}
@@ -60,7 +60,7 @@ func (s *Service) getMissedBlocks(blocks []entities.GasData, from, to uint64) []
 
 func (s *Service) downloadAndStoreBlockChunk(chunk []int64) error {
 	lastBlock := chunk[len(chunk)-1]
-	history, err := s.ethClient.FeeHistory(s.ctx, BlockDownloadBatchSize, big.NewInt(lastBlock), []float64{25, 50, 75})
+	history, err := s.ethClient.FeeHistory(s.ctx, s.blockConf.BlockDownloadBatchSize, big.NewInt(lastBlock), []float64{25, 50, 75})
 	if err != nil {
 		return fmt.Errorf("unable to get fee history for last block %d: %w", lastBlock, err)
 	}

@@ -28,7 +28,7 @@ func (s *Service) addBlock(blockID uint64, fees *big.Int) {
 		BlockID: blockID,
 		BaseFee: fees,
 	})
-	if uint64(s.gasList.Len()) > MaxKeepBlocks {
+	if uint64(s.gasList.Len()) > s.blockConf.MaxKeepBlocks {
 		s.gasList.Remove(s.gasList.Back())
 	}
 }
@@ -39,6 +39,10 @@ func (s *Service) getGasPricePosition(fee *big.Int) float64 {
 	s.gasListMU.RLock()
 	defer s.gasListMU.RUnlock()
 	totalBlocks := s.gasList.Len()
+	if uint64(totalBlocks) < s.blockConf.MaxKeepBlocks {
+		// history not loaded yet
+		return 101
+	}
 	for el := s.gasList.Front(); el != nil; el = el.Next() {
 		if fee.Cmp(el.Value.(entities.GasData).BaseFee) < 0 { // if current block has MORE fees than block in list
 			blockHasPriceMore++

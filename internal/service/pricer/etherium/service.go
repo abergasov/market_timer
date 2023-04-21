@@ -34,15 +34,23 @@ type Service struct {
 	// gas list
 	gasList   *list.List
 	gasListMU sync.RWMutex
+
+	// conf
+	blockConf BlockSetup
 }
 
-func InitService(log logger.AppLogger, repoTimer *price.Repo, rpcURL string) *Service {
+func InitService(log logger.AppLogger, repoTimer *price.Repo, rpcURL string, blockDuration float64) *Service {
 	return &Service{
 		rpcURL:  rpcURL,
 		repo:    repoTimer,
 		log:     log,
 		gasList: list.New(),
 		subs:    make(map[float64]chan entities.GasRates),
+		blockConf: BlockSetup{
+			BlockDuration:          blockDuration,
+			MaxKeepBlocks:          uint64(3 * ((24 * 60 * 60) / blockDuration)),
+			BlockDownloadBatchSize: 1024,
+		},
 	}
 }
 

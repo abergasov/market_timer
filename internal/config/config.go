@@ -10,8 +10,10 @@ import (
 )
 
 type AppConfig struct {
-	AppPort int    `yaml:"app_port"`
-	ETHRPC  string `yaml:"eth_rpc"`
+	AppPort  int    `yaml:"app_port"`
+	ETHRPC   string `yaml:"eth_rpc"`
+	ARBRPC   string `yaml:"arb_rpc"`
+	MATICRPC string `yaml:"matic_rpc"`
 }
 
 func InitConf(confFile string) (*AppConfig, error) {
