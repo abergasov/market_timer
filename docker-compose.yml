@@ -14,7 +14,7 @@ services:
     environment:
       GIT_HASH: $GIT_HASH
     ports:
-      - 58213:8000
+      - 8001:8000
     volumes:
       - data_counter:/var/lib/marketimer
     command: ["/app/marketimer"]

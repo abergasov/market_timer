@@ -16,9 +16,9 @@ RUN make build
 FROM debian:buster-slim
 WORKDIR /app
 COPY --from=build /app /app
-COPY --from=build /app/bin/binary /app/
+COPY --from=build /app/bin/marketimer /app/
 COPY --from=build /app/configs/* /app/configs/
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
-RUN chmod +x /app/binary
+RUN chmod +x /app/marketimer
 EXPOSE 8000/tcp
-CMD /app/binary
+CMD /app/marketimer
