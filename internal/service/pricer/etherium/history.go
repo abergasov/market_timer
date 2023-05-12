@@ -24,6 +24,9 @@ func (s *Service) DownloadMissedHistory() error {
 	if err = s.repo.DeleteBlocksBefore(big.NewInt(int64(from))); err != nil {
 		return fmt.Errorf("unable to delete blocks before %d: %w", from, err)
 	}
+	if s.chain != entities.ETHEREUM {
+		return nil
+	}
 	gasData, err := s.repo.GetGasData(from, currentBlock)
 	if err != nil {
 		return fmt.Errorf("unable to get gas data between blocks %d - %d: %w", from, currentBlock, err)

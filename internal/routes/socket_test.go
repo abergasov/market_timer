@@ -27,7 +27,73 @@ func TestServer_ETH(t *testing.T) {
 	received := false
 
 	go func() {
-		ws, err := websocket.Dial(fmt.Sprintf("ws://%s/ws/eth/99", address), "", fmt.Sprintf("http://%s/", address))
+		ws, err := websocket.Dial(fmt.Sprintf("ws://%s/ws/%s/99", address, entities.ETHEREUM), "", fmt.Sprintf("http://%s/", address))
+		require.NoError(t, err, "unable to connect to websocket")
+		for {
+			var msg = make([]byte, 512)
+			n, err := ws.Read(msg)
+			require.NoError(t, err, "unable to read from websocket")
+			var gr entities.GasRates
+			require.NoError(t, json.Unmarshal(msg[:n], &gr))
+			received = true
+			signalChan <- struct{}{}
+			break
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("timeout")
+	case <-signalChan:
+		break
+	}
+	require.Truef(t, received, "no message received")
+}
+
+func TestServer_ARB(t *testing.T) {
+	testhelpers.SpawnWebServer(t, "config.yaml", testhelpers.GetTestContext(t))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	signalChan := make(chan struct{})
+	received := false
+
+	go func() {
+		ws, err := websocket.Dial(fmt.Sprintf("ws://%s/ws/arb/99", address), "", fmt.Sprintf("http://%s/", address))
+		require.NoError(t, err, "unable to connect to websocket")
+		for {
+			var msg = make([]byte, 512)
+			n, err := ws.Read(msg)
+			require.NoError(t, err, "unable to read from websocket")
+			var gr entities.GasRates
+			require.NoError(t, json.Unmarshal(msg[:n], &gr))
+			received = true
+			signalChan <- struct{}{}
+			break
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("timeout")
+	case <-signalChan:
+		break
+	}
+	require.Truef(t, received, "no message received")
+}
+
+func TestServer_Polygon(t *testing.T) {
+	testhelpers.SpawnWebServer(t, "config.yaml", testhelpers.GetTestContext(t))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+
+	signalChan := make(chan struct{})
+	received := false
+
+	go func() {
+		ws, err := websocket.Dial(fmt.Sprintf("ws://%s/ws/%s/99", address, entities.POLYGON), "", fmt.Sprintf("http://%s/", address))
 		require.NoError(t, err, "unable to connect to websocket")
 		for {
 			var msg = make([]byte, 512)

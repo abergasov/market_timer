@@ -16,6 +16,7 @@ import (
 // Service observes gas price for given chain.
 // Handle historical data and notify consumers about price changes
 type Service struct {
+	chain  string
 	log    logger.AppLogger
 	repo   *price.Repo
 	subs   map[float64]chan entities.GasRates
@@ -39,8 +40,9 @@ type Service struct {
 	blockConf BlockSetup
 }
 
-func InitService(log logger.AppLogger, repoTimer *price.Repo, rpcURL string, blockDuration float64) *Service {
+func InitService(log logger.AppLogger, repoTimer *price.Repo, chain, rpcURL string, blockDuration float64) *Service {
 	return &Service{
+		chain:   chain,
 		rpcURL:  rpcURL,
 		repo:    repoTimer,
 		log:     log,

@@ -12,7 +12,7 @@ import (
 
 func TestRepo(t *testing.T) {
 	conn := testhelpers.GetTestContext(t)
-	repo, err := price.InitRepo(conn, entities.ETH)
+	repo, err := price.InitRepo(conn, entities.ETHEREUM)
 	require.NoError(t, err)
 
 	sampleData := []entities.GasData{

@@ -14,6 +14,7 @@ type AppConfig struct {
 	ETHRPC   string `yaml:"eth_rpc"`
 	ARBRPC   string `yaml:"arb_rpc"`
 	MATICRPC string `yaml:"matic_rpc"`
+	OPRPC    string `yaml:"op_rpc"`
 }
 
 func InitConf(confFile string) (*AppConfig, error) {

@@ -1,12 +1,15 @@
 package entities
 
-const ETH = "eth"
-const ARB = "arb"
-const MATIC = "matic"
+const ETHEREUM = "eth"
+const ARBITRUM = "arb"
+const POLYGON = "matic"
+const OPTIMISM = "op"
+
+var SupportedChains = []string{ETHEREUM, ARBITRUM, POLYGON, OPTIMISM}
 
 func ValidateChain(chain string) bool {
 	switch chain {
-	case ETH, ARB, MATIC:
+	case ETHEREUM, ARBITRUM, POLYGON, OPTIMISM:
 		return true
 	default:
 		return false
