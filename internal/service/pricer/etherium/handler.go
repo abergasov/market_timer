@@ -35,7 +35,6 @@ func (s *Service) handleHead(ch chan *types.Header) {
 			s.log.Error("unable to add gas data", err)
 		}
 		percent := s.getGasPricePosition(h.BaseFee)
-		s.log.Info("blocks has more price than current", zap.Float64("percent", percent), zap.String("block", h.Number.String()), zap.String("base_fee", h.BaseFee.String()))
 		s.notifySubs(entities.GasRates{
 			BlockID:    h.Number.Uint64(),
 			BaseFee:    h.BaseFee,
@@ -49,6 +48,11 @@ func (s *Service) notifySubs(rate entities.GasRates) {
 	defer s.subsMU.RUnlock()
 	for percent, sub := range s.subs {
 		if rate.Percentage <= percent {
+			s.log.Info("notify subscriber",
+				zap.Float64("percent", percent),
+				zap.Uint64("block", rate.BlockID),
+				zap.String("base_fee", rate.BaseFee.String()),
+			)
 			sub <- rate
 		}
 	}

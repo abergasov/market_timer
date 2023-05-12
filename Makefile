@@ -42,8 +42,12 @@ build: ## Build binary
 
 run: ## Runs binary local with environment in docker
 	${info Run app containered}
-	GIT_HASH=${FILE_HASH} docker compose -p ${PROJECT_NAME} up --build
+	GIT_HASH=${FILE_HASH} docker compose -p ${PROJECT_NAME} up --build -d
+
+logs: ## Shows logs
+	${info Showing logs...}
+	docker logs -f marketimer
 
 
-.PHONY: help install-lint test gogen lint stop dev_up build run init_repo
+.PHONY: help install-lint test gogen lint stop dev_up build run logs
 .DEFAULT_GOAL := help
