@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"time"
+
 	"github.com/abergasov/market_timer/internal/service/stopper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -14,7 +16,10 @@ func NewAppLogger(appHash string) (*Logger, error) {
 	cnf := zap.NewProductionConfig()
 	cnf.DisableStacktrace = true
 	cnf.DisableCaller = true
-	cnf.EncoderConfig.TimeKey = zapcore.OmitKey
+	//cnf.EncoderConfig.TimeKey = zapcore.OmitKey
+	cnf.EncoderConfig.EncodeTime = func(tm time.Time, encoder zapcore.PrimitiveArrayEncoder) {
+		encoder.AppendString(tm.Format(time.DateTime))
+	}
 
 	z, err := cnf.Build()
 	if err != nil {
