@@ -11,6 +11,7 @@ services:
       args:
         CONF_PATH: configs/app_conf_docker.yml
     restart: always
+    container_name: marketimer
     environment:
       GIT_HASH: $GIT_HASH
     ports:

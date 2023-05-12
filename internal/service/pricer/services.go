@@ -29,6 +29,9 @@ func InitObservers(appLog logger.AppLogger, appConf *config.AppConfig, dbConn da
 		conf := serviceConfig{
 			blockDuration: 1,
 		}
+		if chain != entities.OPTIMISM {
+			continue // for optimish better look at eth price, cause fees depends on eth gas price
+		}
 		switch chain {
 		case entities.ETHEREUM:
 			conf = serviceConfig{
