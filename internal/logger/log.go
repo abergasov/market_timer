@@ -22,7 +22,7 @@ func NewAppLogger(appHash string) (*Logger, error) {
 	}
 
 	if appHash != "" {
-		z = z.With(zap.String("hash", appHash))
+		z = z.With(zap.String("hash", appHash[:7]))
 	}
 	return &Logger{l: z}, nil
 }
